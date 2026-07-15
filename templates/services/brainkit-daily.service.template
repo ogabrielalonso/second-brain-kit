@@ -1,0 +1,17 @@
+# systemd user unit: daily distillation + judge pipeline (brain_daily.py), triggered by
+# brainkit-daily.timer.template. Equivalent of com.brainkit.daily.plist.template.
+# Install alongside the .timer to ~/.config/systemd/user/, then:
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now brainkit-daily.timer
+#
+# Placeholders: {{PYTHON}}, {{KIT_DIR}}, {{BRAIN_HOME}} (see brainkit-daemon.service.template).
+
+[Unit]
+Description=brain-kit daily distillation and judge pipeline
+
+[Service]
+Type=oneshot
+ExecStart={{PYTHON}} {{KIT_DIR}}/scripts/brain_daily.py
+Nice=10
+StandardOutput=append:{{BRAIN_HOME}}/logs/daily.systemd.log
+StandardError=append:{{BRAIN_HOME}}/logs/daily.systemd.log

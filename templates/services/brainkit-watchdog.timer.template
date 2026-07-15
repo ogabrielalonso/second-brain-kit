@@ -1,0 +1,13 @@
+# systemd user timer: fires brainkit-watchdog.service every 6 hours, plus once 5 minutes
+# after boot/login so the first check does not wait up to 6h.
+
+[Unit]
+Description=Run brain-kit index watchdog every 6 hours
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

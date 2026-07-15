@@ -1,0 +1,70 @@
+#!/bin/bash
+# Git hook: post-commit, installed inside the OWNER'S VAULT at .git/hooks/post-commit
+# (rendered as-is at install time, no placeholders: every path below is derived from the
+# environment or from ~/.brain/, never from the vault itself).
+#
+# On every commit that touches markdown, this reindexes the brain and, if the vault has a
+# git remote named "origin", pushes a best-effort offsite backup. Both actions are spawned
+# with start_new_session=True so they are detached from this commit's process group: if
+# the commit itself was made by a scheduled pipeline (daily/weekly job), the scheduler
+# tearing down that process group must not kill the reindex/push still running in the
+# background. Never blocks or fails the commit.
+#
+# Logs live under ~/.brain/logs/ (outside the vault, never in /tmp): reindex.log is
+# appended to with a timestamped header per run; push.log gets one line per push attempt.
+
+CHANGED_MD=$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null | grep -E '\.md$' | head -5)
+export CHANGED_MD
+
+BRAIN_KIT_DIR="${BRAIN_KIT_DIR:-$HOME/.brain/kit}"
+LOG_DIR="$HOME/.brain/logs"
+mkdir -p "$LOG_DIR" 2>/dev/null
+
+CURRENT_BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+CURRENT_BRANCH="${CURRENT_BRANCH:-main}"
+
+export BRAIN_KIT_DIR
+export LOG_DIR
+export CURRENT_BRANCH
+
+/usr/bin/env python3 - <<'PY'
+import subprocess
+import os
+import datetime
+
+log_dir = os.environ.get("LOG_DIR")
+kit_dir = os.environ.get("BRAIN_KIT_DIR")
+branch = os.environ.get("CURRENT_BRANCH", "main")
+stamp = datetime.datetime.now().isoformat(timespec="seconds")
+
+embed_script = os.path.join(kit_dir, "scripts", "embed.sh")
+if os.environ.get("CHANGED_MD") and os.path.isfile(embed_script):
+    reindex_log = open(os.path.join(log_dir, "reindex.log"), "a")
+    reindex_log.write("\n=== reindex triggered %s (post-commit) ===\n" % stamp)
+    reindex_log.flush()
+    subprocess.Popen(
+        [embed_script],
+        stdout=reindex_log,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+
+has_remote = subprocess.run(
+    ["git", "remote", "get-url", "origin"],
+    capture_output=True,
+).returncode == 0
+
+if has_remote:
+    push_log = open(os.path.join(log_dir, "push.log"), "a")
+    push_log.write("[%s] push origin %s (best-effort, post-commit)\n" % (stamp, branch))
+    push_log.flush()
+    subprocess.Popen(
+        ["git", "push", "origin", branch, "--quiet"],
+        stdout=push_log,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+PY
+
+[ -n "$CHANGED_MD" ] && echo "Brain reindex running in background (markdown changed). Log: ~/.brain/logs/reindex.log"
+exit 0

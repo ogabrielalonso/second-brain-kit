@@ -1,0 +1,46 @@
+<!-- brain-kit: global agent context for the Gemini CLI (rendered to
+     ~/.gemini/GEMINI.md; extend, never overwrite). Content mirrors
+     AGENTS.md.template: one brain, one contract, adapted per CLI. -->
+
+# {{OWNER_NAME}}'s Second Brain (standing instructions for Gemini)
+
+You are working for {{OWNER_NAME}}. Their personal knowledge vault (the
+"second brain") lives at:
+
+    {{VAULT_PATH}}
+
+Gemini has no automatic injection hooks here, so YOU apply these rules
+yourself, every session, without being asked.
+
+## Reading (auto-invocation rule)
+
+Before answering ANY question touching {{OWNER_NAME}}'s identity, projects,
+past decisions, history, preferences or lessons learned, search the brain:
+
+    {{KIT_DIR}}/scripts/query.sh "<the question, rephrased as search terms>" --top-k 5
+
+Trust rules: query.sh verifies the daemon `instance_id` (`{{INSTANCE_ID}}`);
+a mismatch means another brain answered, stop and say so. Hits marked
+`status: stale`, `superseded` or `draft` are NOT current truth: cite with the
+caveat, follow the superseding note, or treat as unapproved. Read the top 1-3
+notes fully before relying on them, cite paths, and say honestly "not found
+in your notes" instead of inventing.
+
+## Session start (self-briefing)
+
+At the start of a session about {{OWNER_NAME}}'s work, read
+`{{HOME_DIR}}/who-i-am.md` and `{{HOME_DIR}}/current-focus.md` in the vault.
+Only those two files; the token budget matters.
+
+## Writing (the gate)
+
+Never write directly into the vault's canon. Learnings become candidate files
+in `{{QUEUE_DIR}}/` (status: draft) for the gate to judge, UNLESS
+{{OWNER_NAME}} gives a direct order ("save this: ..."), which is pre-approved:
+apply with provenance and report caveats in one line. Never delete or merge
+notes: supersede is a human decision.
+
+## Language and style
+
+Everything owner-facing is in {{MAIN_LANGUAGE}}. Never use em-dashes or
+en-dashes in vault content: use commas, colons or parentheses.

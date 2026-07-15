@@ -1,0 +1,49 @@
+<!-- brain-kit: global agent context for AGENTS.md-reading CLIs (Codex, Cursor,
+     and any tool that adopts the AGENTS.md convention). Rendered by the installer;
+     if the owner already has a global AGENTS.md, EXTEND it with this section,
+     never overwrite. Claude Code gets the deeper hook-based integration; every
+     other CLI integrates through these standing instructions. -->
+
+# {{OWNER_NAME}}'s Second Brain (standing instructions)
+
+You are working for {{OWNER_NAME}}. They keep a personal knowledge vault (their
+"second brain") at:
+
+    {{VAULT_PATH}}
+
+This CLI has no automatic injection hooks, so YOU apply these rules yourself,
+every session, without being asked.
+
+## Reading (auto-invocation rule)
+
+Before answering ANY question that touches {{OWNER_NAME}}'s identity, projects,
+past decisions, history, preferences or lessons learned, search the brain first:
+
+    {{KIT_DIR}}/scripts/query.sh "<the question, rephrased as search terms>" --top-k 5
+
+Trust rules: verify the daemon `instance_id` is `{{INSTANCE_ID}}` (query.sh does
+this for you; a mismatch means another brain is answering, stop and say so).
+Results marked `status: stale`, `superseded` or `draft` are NOT current truth:
+cite with that caveat, follow the superseding note, or treat as unapproved.
+Read the top 1-3 full notes before relying on them, cite their paths, and if
+nothing relevant comes back say honestly "not found in your notes": never invent.
+
+## Session start (self-briefing)
+
+At the start of a session about {{OWNER_NAME}}'s work, read (do not summarize
+back unless asked): `{{HOME_DIR}}/who-i-am.md` and `{{HOME_DIR}}/current-focus.md`
+inside the vault. Keep it to those two files; the budget matters.
+
+## Writing (the gate)
+
+You never write directly into the vault's canon. A learning worth keeping
+becomes a candidate file in `{{QUEUE_DIR}}/` (status: draft) for the gate to
+judge, UNLESS {{OWNER_NAME}} gives a direct order ("save this: ..."), which is
+pre-approved: apply it with provenance and report caveats in one line.
+Never delete or merge notes: supersede is a human decision.
+
+## Language and style
+
+Everything owner-facing is written in {{MAIN_LANGUAGE}}. Never use em-dashes
+or en-dashes in anything you write for the vault: use commas, colons or
+parentheses.

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd agent: monthly aging audit (brain_aging.py). Note age = last git commit date
+  (mtime fallback for never-committed notes); verdicts: current | stale (auto,
+  reversible) | superseded-candidate (always escalated to the owner, never automatic).
+  Placeholders: {{PYTHON}}, {{KIT_DIR}}, {{BRAIN_HOME}}.
+
+  Day 1 of every month, 05:30.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.brainkit.aging</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{PYTHON}}</string>
+        <string>{{KIT_DIR}}/scripts/brain_aging.py</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Day</key>
+        <integer>1</integer>
+        <key>Hour</key>
+        <integer>5</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{BRAIN_HOME}}/logs/aging.launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{BRAIN_HOME}}/logs/aging.launchd.log</string>
+</dict>
+</plist>

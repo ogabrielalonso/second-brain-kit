@@ -1,0 +1,11 @@
+# systemd user timer: fires brainkit-aging.service on day 1 of every month at 05:30.
+
+[Unit]
+Description=Run brain-kit aging audit monthly
+
+[Timer]
+OnCalendar=*-*-01 05:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

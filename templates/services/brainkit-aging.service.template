@@ -1,0 +1,17 @@
+# systemd user unit: monthly aging audit (brain_aging.py), triggered by
+# brainkit-aging.timer.template. Equivalent of com.brainkit.aging.plist.template. Note
+# age = last git commit date (mtime fallback for never-committed notes); verdicts:
+# current | stale (auto, reversible) | superseded-candidate (always escalated to the
+# owner, never automatic).
+#
+# Placeholders: {{PYTHON}}, {{KIT_DIR}}, {{BRAIN_HOME}}.
+
+[Unit]
+Description=brain-kit monthly aging audit
+
+[Service]
+Type=oneshot
+ExecStart={{PYTHON}} {{KIT_DIR}}/scripts/brain_aging.py
+Nice=10
+StandardOutput=append:{{BRAIN_HOME}}/logs/aging.systemd.log
+StandardError=append:{{BRAIN_HOME}}/logs/aging.systemd.log

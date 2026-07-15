@@ -1,0 +1,15 @@
+# systemd user timer: fires brainkit-daily.service at 05:00 (primary) and 12:00 (retry).
+# brain_daily.py is idempotent per day (skips work already applied), so the 12:00 entry
+# is a free retry if the machine was asleep/off at 05:00, not a duplicate pipeline.
+# Persistent=true catches up a missed run after the machine wakes up.
+
+[Unit]
+Description=Run brain-kit daily pipeline at 05:00 and 12:00
+
+[Timer]
+OnCalendar=*-*-* 05:00:00
+OnCalendar=*-*-* 12:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

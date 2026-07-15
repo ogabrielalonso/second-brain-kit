@@ -1,0 +1,152 @@
+# CLAUDE.md, {{OWNER_NAME}}'s brain
+
+Operational guide for **Claude Code, skills and agents** using this vault as context for
+{{OWNER_NAME}}'s life and work. This is the authoritative document: in case of conflict
+with any other documentation in this vault, **this file wins**.
+
+> **Golden rule:** when answering about the content of this vault, **base your answer
+> exclusively on what is written in the notes** (frontmatter + body). Do not invent, do
+> not infer beyond what is written. If the information is not here, say "I did not find
+> this in the vault."
+
+{{RENDER: if the installing Claude adapted this section (e.g. a schema/conventions doc
+exists at a different path in MODE A), note it here in one line. Otherwise delete this
+block.}}
+
+---
+
+## Auto-invocation of search (critical rule, single copy)
+
+{{OWNER_NAME}} talks in natural language, not `/commands`. Invoke semantic search
+**proactively** whenever the conversation touches: identity/roles, active projects
+(see {{RENDER: list the owner's project/topic names from the interview, comma
+separated}}), history ("when did I...", "remember when..."), past decisions ("why did I
+decide..."), lessons ("what did I learn from..."), or personal patterns ("how do I
+usually...").
+
+```bash
+{{KIT_DIR}}/scripts/query.sh "<question reformulated in searchable terms>" --top-k 10 --json
+# filters: --min-score 0.5 · --source X · --type Y · --tag Z · --chunk-type T
+```
+
+The `UserPromptSubmit` hook already auto-injects hits above the configured score
+threshold; manual search covers what it did not catch (reformulated query, filters, more
+results). Then **Read the 2-3 most relevant notes** and answer with their real content,
+citing paths.
+
+- Do NOT answer about a project/decision/lesson without consulting the brain first
+- Do NOT ask permission to search (just run it, don't narrate)
+- Do NOT invent when search returns nothing: say "I found no specific evidence in the
+  brain about X"
+
+## Write model: autonomous gate with escalation
+
+{{RENDER: if judge_enabled is false at render time, keep this section but note at the
+top: "The judge ships DORMANT; until turned on, all candidates route to escalation for
+{{OWNER_NAME}} to review by hand." Delete that note once judge_enabled is true.}}
+
+The vault is AI-first on both read and write; maintenance is **automatic and
+autonomous** once the judge is turned on: {{OWNER_NAME}} does not approve candidates day
+to day. The evaluator is the **judge** (`gate_judge.py`, an adversarial judge with
+{{OWNER_NAME}}'s criteria encoded), in a three-brain split: whoever distills (cheap
+model, daily pipeline) does not judge, whoever judges (strong model) does not write,
+whoever writes is deterministic code.
+
+- **Canon**: {{RENDER: list the resolved taxonomy dirs from config.taxonomy: home_dir,
+  decisions_dir, weekly_dir, plus any project/knowledge dirs the owner confirmed}}.
+- **Daily flow**: the daily pipeline distills candidates, the judge evaluates
+  (approve/edit/discard/escalate) with semantic dedup and durability/generality
+  criteria, deterministic appliers write to the resolved destination with provenance
+  `judge`, then a scoped commit (only the paths touched this run).
+- **Escalation** (the queue at `{{QUEUE_DIR}}` holds ONLY this): facts about people's
+  roles/identity, contradiction with an `active` note (superseding is always a human
+  decision), a destination the applier cannot resolve, any delete/merge. Escalated items
+  wait for {{OWNER_NAME}}; everything else flows through automatically.
+- **After-the-fact review**: {{OWNER_NAME}} audits via the commit digest whenever they
+  want; reverting is cheap (`git revert`).
+
+**Trust axis, `status`:**
+
+| `status` | meaning | agent behavior |
+|---|---|---|
+| `draft` | pre-judgment candidate (or escalated, awaiting a human) | do not cite as current truth |
+| `active` | approved (by {{OWNER_NAME}} or by the judge; see `approved_by`) | trust and cite |
+| `stale` | may have aged | cite with a caveat |
+| `superseded` | replaced (`superseded_by`) | do not cite as current; follow the link |
+
+- `status` is required only on **dynamic** notes (decisions, lessons, status dashboards,
+  project notes, anything AI writes). Evergreen notes carry no `status` (absence =
+  `active`). Notes graduated by the judge carry `approved_by: judge`.
+- **Supersede, never delete:** when a note is superseded, set `status: superseded` +
+  `superseded_by: "[[Successor]]"`. Never automatic: supersede/delete/merge are always
+  human decisions.
+- **Interactive sessions:** if {{OWNER_NAME}} explicitly says "save this," the content is
+  approved on the spot; write it and report any caveats in one line. Without a direct
+  order in an interactive session, propose it (or leave the candidate for the daily
+  pipeline to judge).
+
+**The 3 canonical operations:** **Ingest** (source -> AI distills -> judge evaluates ->
+canon or escalation) · **Query** (search -> cited answer) · **Lint** (health check;
+non-cosmetic fixes escalate).
+
+## Who is {{OWNER_NAME}} (summary)
+
+{{RENDER: 3-6 lines from the interview: role, company/context (config.owner_context),
+stack, a couple of constant sources/interests if the owner mentioned any. Link to the
+identity note, e.g. [[00-HOME/who-i-am]], instead of duplicating it at length here.}}
+
+## What this vault is (and is not)
+
+| Is | Is not |
+|---|---|
+| Living operational brain, continuous context | A dump of raw transcripts (route those elsewhere) |
+| Atomic knowledge by topic + MOCs | A task manager |
+| Identity, focus, decisions, daily log | Secret storage (credentials live outside the vault) |
+| Traceable provenance (`source`, `source_url`) | A copy of entire chat transcripts (distill first) |
+
+## Folder taxonomy
+
+{{RENDER: render this tree from config.taxonomy, one line per confirmed directory. MODE
+B default shown below; MODE A replaces paths with the owner's real structure.}}
+
+```
+{{HOME_DIR}}/              -> identity and current focus (injected by hook)
+01-MOCs/               -> topic entry points (maps of content)
+02-Projects/            -> active projects
+03-Knowledge/            -> atomic knowledge by area
+{{DIGESTS_DIR}}/              -> YYYY/MM daily notes · {{WEEKLY_DIR}}/ · {{DECISIONS_DIR}}/
+Inbox/                  -> quick capture buffer
+_system/                -> internal tooling, never queried for knowledge
+```
+
+**Creating a new note:** flows and templates live in {{RENDER: link to the schema doc if
+one was ported/adapted for this vault; otherwise state "not yet defined, ask the owner
+before inventing a new note type."}}
+
+## Operational workflow
+
+| Cadence | Activity |
+|---|---|
+| Daily | Daily note under `{{DIGESTS_DIR}}/YYYY/MM/`; update the current-focus note if priority #1 changed |
+| Weekly | Lint + digest (autonomous) + process Inbox when it grows past ~10 notes |
+| Ad hoc | Big decision -> `{{DECISIONS_DIR}}/`; substantial AI conversation -> distill into a note |
+| Monthly | Review the identity note / goals |
+
+## Where things are (single reference table)
+
+| I want | Where |
+|---|---|
+| Distilled identity / interaction manual | `{{HOME_DIR}}/who-i-am.md` · `{{HOME_DIR}}/interaction-preferences.md` |
+| Current focus | `{{HOME_DIR}}/current-focus.md` |
+| Decisions and reasoning | `{{DECISIONS_DIR}}/` |
+| Config / index health | `{{RENDER: path to config and manifest, or the daemon /health endpoint}}` |
+| Credentials | **Not in this vault** |
+
+Query strategy: 1) injected context (hooks) -> 2) topic layer (project -> its status
+note; decision -> `{{DECISIONS_DIR}}/`) -> 3) semantic search with filters -> 4) read the
+body only of the filtered notes, citing provenance. `_system/` and `Inbox/` do not count
+as canon knowledge (Inbox: usable, but flag it as "pending").
+
+---
+
+*Rendered by brain-kit for {{OWNER_NAME}} on {{RENDER: install date}}.*

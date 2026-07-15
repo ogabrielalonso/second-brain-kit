@@ -1,0 +1,11 @@
+# systemd user timer: fires brainkit-weekly.service every Saturday at 05:00.
+
+[Unit]
+Description=Run brain-kit weekly pipeline on Saturdays at 05:00
+
+[Timer]
+OnCalendar=Sat *-*-* 05:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd agent: the brain daemon (persistent local retrieval server, 127.0.0.1 only).
+  Placeholders rendered by the installer, launchd cannot expand ~ or env vars:
+    {{PYTHON}}     absolute path to the python3 interpreter to run
+    {{KIT_DIR}}    absolute path to the kit checkout (default ~/.brain/kit, resolved)
+    {{BRAIN_HOME}} absolute path to ~/.brain (resolved), used only for log files here
+
+  KeepAlive + RunAtLoad: this is the one long-running service; launchd restarts it if it
+  exits. Nice 10: background priority, never competes with interactive work.
+
+  Log hygiene: StandardOutPath/StandardErrorPath below are launchd's OWN capture of
+  anything the process prints to stdout/stderr. They are intentionally a DIFFERENT file
+  from the daemon's internal application log ({{BRAIN_HOME}}/logs/daemon.log, written by
+  brain_daemon.py itself) so the two never interleave or duplicate lines.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.brainkit.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{PYTHON}}</string>
+        <string>{{KIT_DIR}}/scripts/brain_daemon.py</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{BRAIN_HOME}}/logs/daemon.launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{BRAIN_HOME}}/logs/daemon.launchd.log</string>
+</dict>
+</plist>

@@ -1,0 +1,40 @@
+{
+  "_doc": "Synthetic gate-judge fixtures for the deterministic apply/escalate/stamp layer. The LLM judgment itself (the six decisions below) is NOT re-evaluated by unit tests; it is backtested at install time (docs/ARCHITECTURE.md, installer flow Phase 4). What these fixtures pin down here is the escalation-precedence contract and the shape the deterministic applier must handle for each category.",
+  "decision_enum": ["approve", "edit", "discard", "escalate"],
+  "escalation_precedence": [
+    "dedup", "too-specific", "person-role", "confidentiality",
+    "contradiction", "unknown-destination", "cap"
+  ],
+  "cases": [
+    {
+      "file": "01-clear-duplicate.md",
+      "expected_decision": "discard",
+      "category": "dedup"
+    },
+    {
+      "file": "02-contradicts-active-note.md",
+      "expected_decision": "escalate",
+      "category": "contradiction"
+    },
+    {
+      "file": "03-person-role-fact.md",
+      "expected_decision": "escalate",
+      "category": "person-role"
+    },
+    {
+      "file": "04-good-general-lesson.md",
+      "expected_decision": "approve",
+      "category": "generalizable-lesson"
+    },
+    {
+      "file": "05-too-specific-detail.md",
+      "expected_decision": "discard",
+      "category": "too-specific"
+    },
+    {
+      "file": "06-unknown-destination.md",
+      "expected_decision": "escalate",
+      "category": "unknown-destination"
+    }
+  ]
+}

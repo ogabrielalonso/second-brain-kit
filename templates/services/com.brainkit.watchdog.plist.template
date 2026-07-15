@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd agent: index staleness watchdog (brain_watchdog.py). Self-heals a stale index
+  (threshold config.thresholds.index_stale_h, default 12h); a crashed check must itself
+  raise a phone alert, a blind watchdog must never be silent (see docs/ARCHITECTURE.md
+  hardening item 4).
+  Placeholders: {{PYTHON}}, {{KIT_DIR}}, {{BRAIN_HOME}}.
+
+  StartInterval (seconds) fires every 6 hours; RunAtLoad also runs one check immediately
+  on login/boot instead of waiting up to 6h for the first pass.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.brainkit.watchdog</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{PYTHON}}</string>
+        <string>{{KIT_DIR}}/scripts/brain_watchdog.py</string>
+    </array>
+
+    <key>StartInterval</key>
+    <integer>21600</integer>
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{BRAIN_HOME}}/logs/watchdog.launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{BRAIN_HOME}}/logs/watchdog.launchd.log</string>
+</dict>
+</plist>

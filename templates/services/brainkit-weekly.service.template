@@ -1,0 +1,16 @@
+# systemd user unit: autonomous weekly lint + digest (brain_weekly_auto.py), triggered by
+# brainkit-weekly.timer.template. Equivalent of com.brainkit.weekly.plist.template. The
+# interactive review tool (brain_weekly.py) is invoked by hand later, from
+# templates/commands; this job never blocks on human input.
+#
+# Placeholders: {{PYTHON}}, {{KIT_DIR}}, {{BRAIN_HOME}}.
+
+[Unit]
+Description=brain-kit autonomous weekly lint and digest
+
+[Service]
+Type=oneshot
+ExecStart={{PYTHON}} {{KIT_DIR}}/scripts/brain_weekly_auto.py
+Nice=10
+StandardOutput=append:{{BRAIN_HOME}}/logs/weekly.systemd.log
+StandardError=append:{{BRAIN_HOME}}/logs/weekly.systemd.log

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd agent: autonomous weekly lint + digest (brain_weekly_auto.py). The interactive
+  review tool (brain_weekly.py) is invoked by hand later, from templates/commands; this
+  job only produces the digest/newsletter input, it never blocks on human input.
+  Placeholders: {{PYTHON}}, {{KIT_DIR}}, {{BRAIN_HOME}}.
+
+  Weekday 6 = Saturday in launchd's StartCalendarInterval (0/7 = Sunday, 1 = Monday, ...).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.brainkit.weekly</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{PYTHON}}</string>
+        <string>{{KIT_DIR}}/scripts/brain_weekly_auto.py</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Weekday</key>
+        <integer>6</integer>
+        <key>Hour</key>
+        <integer>5</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{BRAIN_HOME}}/logs/weekly.launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{BRAIN_HOME}}/logs/weekly.launchd.log</string>
+</dict>
+</plist>

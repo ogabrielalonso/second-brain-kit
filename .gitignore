@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Local runtime state (never ships, never committed)
+.brain/
+index/
+*.index
+model-cache/
+model_cache/
+
+# Secrets (never ships, never committed)
+*ntfy-topic*
+*.secret
+secrets/
+*.pem
+*.key
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor noise
+.vscode/
+.idea/
+*.swp
+
+# Logs and temp
+*.log
+tmp/
+*.tmp
+
+# private leak-pattern list (author-local, never shipped)
+tests/denylist.local.txt

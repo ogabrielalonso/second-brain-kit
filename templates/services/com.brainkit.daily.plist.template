@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd agent: daily distillation + judge pipeline (brain_daily.py).
+  Placeholders: {{PYTHON}}, {{KIT_DIR}}, {{BRAIN_HOME}} (see com.brainkit.daemon.plist.template).
+
+  Runs twice: 05:00 primary, 12:00 retry. brain_daily.py is idempotent per day (it skips
+  work already applied), so the 12:00 entry is a free retry if the 05:00 run failed to
+  start (machine asleep, etc.) rather than a duplicate pipeline.
+
+  StandardOutPath is launchd's own capture, kept separate from the script's internal
+  digest/telemetry log under {{BRAIN_HOME}}/logs/daily.log.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.brainkit.daily</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{PYTHON}}</string>
+        <string>{{KIT_DIR}}/scripts/brain_daily.py</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>5</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>12</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
+
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>{{BRAIN_HOME}}/logs/daily.launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>{{BRAIN_HOME}}/logs/daily.launchd.log</string>
+</dict>
+</plist>

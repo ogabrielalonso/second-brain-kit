@@ -1,0 +1,17 @@
+# systemd user unit: index staleness watchdog (brain_watchdog.py), triggered by
+# brainkit-watchdog.timer.template. Equivalent of com.brainkit.watchdog.plist.template.
+# Self-heals a stale index (threshold config.thresholds.index_stale_h, default 12h); a
+# crashed check must itself raise a phone alert, a blind watchdog must never be silent
+# (see docs/ARCHITECTURE.md hardening item 4).
+#
+# Placeholders: {{PYTHON}}, {{KIT_DIR}}, {{BRAIN_HOME}}.
+
+[Unit]
+Description=brain-kit index staleness watchdog
+
+[Service]
+Type=oneshot
+ExecStart={{PYTHON}} {{KIT_DIR}}/scripts/brain_watchdog.py
+Nice=10
+StandardOutput=append:{{BRAIN_HOME}}/logs/watchdog.systemd.log
+StandardError=append:{{BRAIN_HOME}}/logs/watchdog.systemd.log

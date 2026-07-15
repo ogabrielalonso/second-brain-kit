@@ -1,0 +1,55 @@
+{
+  "owner_name": "Jane Doe",
+  "owner_context": "Founder and product lead at a small consulting studio",
+  "main_language": "en-US",
+  "vault_path": "/abs/path/to/vault",
+  "port": 0,
+  "instance_id": "REPLACE_WITH_RANDOM_HEX",
+  "ntfy_topic_file": "~/.config/secrets/ntfy-topic",
+  "sources": {
+    "claude_projects": true,
+    "extra_paths": []
+  },
+  "confidential_patterns": [
+    "example-client-codename"
+  ],
+  "taxonomy": {
+    "decisions_dir": "04-Journal/Decisions",
+    "weekly_dir": "04-Journal/Weekly",
+    "queue_dir": "04-Journal/gate-queue",
+    "digests_dir": "04-Journal",
+    "heuristics": {
+      "lessons": "",
+      "patterns": ""
+    },
+    "home_dir": "00-HOME",
+    "index_targets": [
+      "00-HOME",
+      "01-MOCs",
+      "02-Projects",
+      "03-Knowledge",
+      "04-Journal"
+    ],
+    "index_exclude": [
+      "_system/",
+      "Inbox/",
+      "gate-queue/",
+      "/templates/",
+      "/history/"
+    ],
+    "moc_map": {}
+  },
+  "thresholds": {
+    "inject_min_score": 0.52,
+    "index_stale_h": 12,
+    "queue_alert": 15,
+    "max_apply_per_run": 10,
+    "aging_check_interval_d": 90,
+    "eligibility": {
+      "min_n": 20,
+      "min_rate": 0.95,
+      "min_weeks": 6
+    }
+  },
+  "judge_enabled": false
+}

@@ -1,0 +1,31 @@
+# systemd user unit: the brain daemon (persistent local retrieval server, 127.0.0.1 only).
+# Equivalent of com.brainkit.daemon.plist.template. Install to
+# ~/.config/systemd/user/brainkit-daemon.service, then:
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now brainkit-daemon.service
+#
+# Placeholders rendered by the installer (systemd unit files do not expand ~ or env vars
+# read from the calling shell):
+#   {{PYTHON}}     absolute path to the python3 interpreter to run
+#   {{KIT_DIR}}    absolute path to the kit checkout (default ~/.brain/kit, resolved)
+#   {{BRAIN_HOME}} absolute path to ~/.brain (resolved), used only for log files here
+#
+# Log hygiene: StandardOutput/StandardError below capture what the process prints; kept
+# separate from the daemon's own internal log ({{BRAIN_HOME}}/logs/daemon.log) so the two
+# never interleave or duplicate lines.
+
+[Unit]
+Description=brain-kit retrieval daemon
+After=network.target
+
+[Service]
+Type=simple
+ExecStart={{PYTHON}} {{KIT_DIR}}/scripts/brain_daemon.py
+Restart=on-failure
+RestartSec=5
+Nice=10
+StandardOutput=append:{{BRAIN_HOME}}/logs/daemon.systemd.log
+StandardError=append:{{BRAIN_HOME}}/logs/daemon.systemd.log
+
+[Install]
+WantedBy=default.target
