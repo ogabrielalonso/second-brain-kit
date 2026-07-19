@@ -11,9 +11,10 @@
   exits. Nice 10: background priority, never competes with interactive work.
 
   Log hygiene: StandardOutPath/StandardErrorPath below are launchd's OWN capture of
-  anything the process prints to stdout/stderr. They are intentionally a DIFFERENT file
-  from the daemon's internal application log ({{BRAIN_HOME}}/logs/daemon.log, written by
-  brain_daemon.py itself) so the two never interleave or duplicate lines.
+  anything the process prints to stdout/stderr. brain_daemon.py deliberately logs to
+  stdout only (no internal log file of its own), so this capture is the daemon's one
+  and only log; the other services (daily/weekly/aging/watchdog) do keep their own
+  internal logs, separate from the launchd capture.
 -->
 <plist version="1.0">
 <dict>

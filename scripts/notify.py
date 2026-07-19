@@ -21,13 +21,15 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 def send(msg, title=None, priority=None, tags=None, timeout=10):
     """Send a notification; never raises (a notification must not take a job down)."""
-    import brain_config
-    topic = brain_config.ntfy_topic()
-    if not topic:
-        print("[notify] no ntfy topic configured (config.ntfy_topic_file missing or "
-              "empty); notification dropped", file=sys.stderr)
-        return False
     try:
+        # Config access stays INSIDE the try: a corrupted/missing config at
+        # notification time must not crash a job whose real work already finished.
+        import brain_config
+        topic = brain_config.ntfy_topic()
+        if not topic:
+            print("[notify] no ntfy topic configured (config.ntfy_topic_file missing or "
+                  "empty); notification dropped", file=sys.stderr)
+            return False
         req = urllib.request.Request(f"https://ntfy.sh/{topic}",
                                      data=msg.encode("utf-8"), method="POST")
         if title:

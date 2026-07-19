@@ -62,7 +62,10 @@ if [ -z "$INSTANCE_ID" ] || [ -z "$PORT" ] || [ "$PORT" = "0" ]; then exit 0; fi
 # Generic terms that count as a trigger on every install, independent of the owner's
 # projects/topics. Kept intentionally small and English-only; the interview-generated
 # triggers.txt is what makes this hook fire on the owner's actual vocabulary.
-GENERIC_TRIGGERS='(\bbrain\b|\bvault\b|\bobsidian\b|\bdecision\b|\blesson\b|\bheuristic\b|\bpattern\b|what did i decide|remember when|last time i|my (project|client|focus|history|priorit)|my (decisions|stack|heuristics)|daily note|this week.?s priorit)'
+# "my (current )?..." class: up to 2 words may sit between "my" and the target
+# ("my current focus", "my main client project"); the strict form missed the
+# most natural phrasing of all ("what is my current focus").
+GENERIC_TRIGGERS='(\bbrain\b|\bvault\b|\bobsidian\b|\bdecision\b|\blesson\b|\bheuristic\b|\bpattern\b|what did i decide|remember when|last time i|my ([a-z]+ ){0,2}(project|client|focus|history|priorit)|my ([a-z]+ ){0,2}(decisions|stack|heuristics)|daily note|this week.?s priorit)'
 
 TRIGGER_REGEX="$GENERIC_TRIGGERS"
 if [ -f "$TRIGGERS_FILE" ]; then

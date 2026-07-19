@@ -35,7 +35,10 @@ BRAIN_HOME = brain_config.brain_home()
 LOG = BRAIN_HOME / "logs" / "brain-watchdog.log"
 ALERTS = BRAIN_HOME / "cache" / "watchdog_alerts.json"
 MANIFEST = brain_config.index_dir() / "manifest.json"
-DAILY_STATE = BRAIN_HOME / "state" / "brain_daily.last_run"
+# Shared-path contract: this MUST be the exact file brain_daily.py's mark_ok()
+# writes; a mismatch fires "never ran" forever even on healthy installs
+# (found by the first team install, 2026-07-18). Guarded by test_shared_paths.py.
+DAILY_STATE = BRAIN_HOME / "cache" / "daily" / ".last_run"
 DAILY_STALE_H = 36
 
 
@@ -141,7 +144,9 @@ def check_escalated(vault, queue_dir, queue_alert):
     qdir = vault / queue_dir
     if not qdir.exists():
         return
-    pend = list(qdir.glob("2*.md"))
+    # Same criterion as gate_judge.load_queue (everything except _scaffolding):
+    # the counted queue must be the judged queue, or the two disagree silently.
+    pend = [p for p in qdir.glob("*.md") if not p.name.startswith("_")]
     if len(pend) > queue_alert:
         alert("queue-full", f"{len(pend)} escalated items pending in the gate "
                             f"(limit {queue_alert}); review with the weekly ritual")

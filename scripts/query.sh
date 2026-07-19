@@ -52,6 +52,11 @@ fi
 
 fallback() {
   echo "(brain-daemon unavailable or config mismatch -- using slow fallback)" >&2
+  # --compact / --mode are daemon-side features; the slow path (query_brain.py)
+  # does not implement them. Say so instead of silently changing output shape.
+  if [ "$COMPACT" = 1 ] || [ -n "$MODE" ]; then
+    echo "(warning: --compact/--mode are only available via the daemon; returning verbose results)" >&2
+  fi
   FB_ARGS=("$QUERY" --top-k "$TOP_K")
   [ "$MIN_SCORE" != 0 ] && FB_ARGS+=(--min-score "$MIN_SCORE")
   [ -n "$SOURCE" ]      && FB_ARGS+=(--source "$SOURCE")

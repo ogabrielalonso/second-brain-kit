@@ -26,6 +26,11 @@ TESTS=(
   test_commit_scoped.py
   test_judge_fixtures.py
   test_aging_fixtures.py
+  test_shared_paths.py
+  test_cross_signatures.py
+  test_queue_hygiene.py
+  test_dry_run_clean.py
+  test_distill_contract.py
 )
 
 overall_rc=0

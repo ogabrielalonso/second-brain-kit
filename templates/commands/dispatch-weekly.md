@@ -6,16 +6,16 @@ description: REVIEW of the weekly brain ritual. The daily gate is AUTONOMOUS (ju
 
 Human-in-the-loop review layer on top of the autonomous weekly job
 (`scripts/brain_weekly_auto.py`), which already produced a digest under
-`{{RENDER: taxonomy.weekly_dir}}` before this command runs. This command never
+`{{WEEKLY_DIR}}` before this command runs. This command never
 re-runs the judge, it reviews what the judge already decided and resolves what it
 escalated.
 
 ## What it does
 
-1. Read this week's digest note under `{{RENDER: taxonomy.weekly_dir}}` (most recent
+1. Read this week's digest note under `{{WEEKLY_DIR}}` (most recent
    file), summarize in a few lines: how many candidates were approved / edited /
    discarded / escalated.
-2. List everything currently sitting in `{{RENDER: taxonomy.queue_dir}}` (the escalation
+2. List everything currently sitting in `{{QUEUE_DIR}}` (the escalation
    queue): one line per item, with the reason it was escalated (person/role fact,
    contradiction with an `active` note, unresolved destination, delete/merge request).
 3. For each escalated item, ask the owner what to do (in the owner's `main_language`,

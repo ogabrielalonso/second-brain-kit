@@ -92,10 +92,18 @@ def source_roots(cfg):
     return roots
 
 
-def collect_recent_sessions(roots, hours, workspace):
-    """Sessions (*.jsonl) modified in the last N hours, filtered for relevance."""
+def collect_recent_sessions(roots, hours, exclude_under):
+    """Sessions (*.jsonl) modified in the last N hours, filtered for relevance.
+
+    exclude_under is brain_home: EVERY headless workspace of the kit's pipelines
+    (daily-workspace, the aging/weekly workspace, future ones) lives under it, so
+    one prefix match excludes them all. Matching only this pipeline's own dir let
+    aging/weekly transcripts feed back into distillation as fake owner sessions."""
     cutoff = datetime.datetime.now().timestamp() - hours * 3600
-    workspace_encoded = str(workspace).replace('/', '-')
+    # Project dirs encode EVERY non-alphanumeric char as '-' ('.brain' -> '-brain');
+    # a naive '/'->'-' replace keeps the dot and never matches, silently disabling
+    # this exclusion (bug 18 of the 2026-07-19 audit). Mirror the real encoding.
+    excluded_encoded = re.sub(r'[^A-Za-z0-9]', '-', str(exclude_under))
     found = []
     for root in roots:
         if not root.exists():
@@ -103,7 +111,7 @@ def collect_recent_sessions(roots, hours, workspace):
         for proj_dir in root.iterdir():
             if not proj_dir.is_dir():
                 continue
-            if workspace_encoded in proj_dir.name:   # exclude this pipeline's own runs
+            if excluded_encoded in proj_dir.name:   # exclude the kit's own headless runs
                 continue
             for sf in proj_dir.glob('*.jsonl'):
                 st = sf.stat()
@@ -241,30 +249,53 @@ def run_distill(exported, max_candidates, model, today, queue_dir, owner_name, m
         "--model", model,
         "--output-format", "json",
         "--allowedTools", f"Read,Grep,Glob,Bash({QUERY_SH}:*)",
+        # Subagents run in the background by default in current harnesses; in -p
+        # the process exits before they return and the final JSON never arrives.
+        # Hard denial here, mirrored by an instruction in prompts/distill_daily.md.
+        "--disallowedTools", "Agent,Task",
     ]
     log(f"claude -p ({model}) distilling {len(exported)} sessions...", log_path)
     try:
-        r = subprocess.run(cmd, cwd=workspace, capture_output=True, text=True, timeout=1800)
+        r = subprocess.run(cmd, cwd=workspace, capture_output=True, text=True, timeout=7200)
     except FileNotFoundError:
         log("claude binary not found on PATH", log_path)
         return None
-    if r.returncode != 0:
-        log(f"claude -p failed rc={r.returncode}: {r.stderr[:500]}", log_path)
+    except subprocess.TimeoutExpired:
+        log("claude -p exceeded the 7200s timeout", log_path)
         return None
+    if r.returncode != 0:
+        log(f"claude -p failed rc={r.returncode}: stderr={r.stderr[:300]} stdout={r.stdout[:300]}", log_path)
+        return None
+    return parse_candidates(r.stdout, log_path)
+
+
+def parse_candidates(stdout_text, log_path=None):
+    """Pure parser for the distillation output (unit-tested in
+    test_distill_contract.py). Contract: the model must answer with a JSON array
+    ([] is a valid empty day). Anything else means the run did NOT complete
+    (e.g. the model ended its turn waiting on background subagents), so this
+    returns None and the caller treats it as a FAILURE: state file untouched,
+    the scheduler's retry covers the period, the owner gets an alert. Returning
+    [] here instead caused 4 days of silent no-op distillation (2026-07-16/19)."""
+    def _say(m):
+        if log_path is not None:
+            log(m, log_path)
+        else:
+            print(m)
     try:
-        wrapper = json.loads(r.stdout)
+        wrapper = json.loads(stdout_text)
         result = wrapper.get('result', '')
     except json.JSONDecodeError:
-        result = r.stdout
+        result = stdout_text
     m = re.search(r'\[.*\]', result, re.DOTALL)   # first JSON array in the text
     if not m:
-        log(f"no JSON in result (start): {result[:300]}", log_path)
-        return []
+        _say(f"no JSON array in result, treating as FAILURE (start): {result[:300]}")
+        return None
     try:
         return json.loads(m.group(0))
     except json.JSONDecodeError as e:
-        log(f"invalid JSON: {e}; start: {m.group(0)[:300]}", log_path)
-        return []
+        _say(f"invalid JSON, treating as FAILURE: {e}; start: {m.group(0)[:300]}")
+        return None
 
 
 def write_queue(cands, today, queue_dir):
@@ -390,7 +421,7 @@ def main():
         state_file.write_text(str(datetime.datetime.now().timestamp()))
 
     roots = source_roots(cfg)
-    sessions = collect_recent_sessions(roots, hours, workspace)
+    sessions = collect_recent_sessions(roots, hours, home)
     if not sessions:
         _log("no relevant sessions in the last %.0fh; nothing to do" % hours)
         mark_ok()

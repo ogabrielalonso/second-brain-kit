@@ -61,11 +61,13 @@ schtasks /create /TN "BrainKit\Watchdog" /TR "\"{{PYTHON}}\" \"{{KIT_DIR}}\scrip
 
 ## Logs
 
-None of the scripts above receive a Task Scheduler-level stdout redirect by default
-(`schtasks` has no direct equivalent of `StandardOutPath`). Each script already writes
-its own internal log under `{{BRAIN_HOME}}\logs\<job>.log`; that is sufficient on
-Windows and keeps parity with the "log hygiene" rule (never let two different writers
-share one log file) without adding a second, redundant capture file.
+None of the scheduled scripts receive a Task Scheduler-level stdout redirect by default
+(`schtasks` has no direct equivalent of `StandardOutPath`). The daily/weekly/aging/
+watchdog scripts each write their own internal log under `{{BRAIN_HOME}}\logs\<job>.log`;
+that is sufficient on Windows and keeps parity with the "log hygiene" rule (never let
+two different writers share one log file). EXCEPTION: brain_daemon.py logs to stdout
+only (no internal log file), so the daemon task's command line MUST append
+`>> {{BRAIN_HOME}}\logs\daemon.log 2>&1` or the daemon runs with no log at all.
 
 ## Verifying
 

@@ -1,6 +1,10 @@
 {
-  "_doc": "Synthetic aging fixtures for the deterministic apply layer (mark note stale / escalate a contradiction). The LLM verdict itself (atual|stale|superseded-candidata) is NOT re-evaluated by unit tests here; it is backtested at install time (docs/ARCHITECTURE.md, installer flow Phase 5). What these fixtures pin down is that, given a canned verdict, the deterministic layer writes the right thing: status: stale in frontmatter for 'stale', a new escalation queue entry (never a direct edit) for 'superseded-candidata'.",
-  "verdict_enum": ["current", "stale", "superseded-candidate"],
+  "_doc": "Synthetic aging fixtures for the deterministic apply layer (mark note stale / escalate a contradiction). The LLM verdict itself is NOT re-evaluated by unit tests here; it is backtested at install time (docs/ARCHITECTURE.md, installer flow Phase 5). What these fixtures pin down is that, given a canned verdict, the deterministic layer writes the right thing: status: stale in frontmatter for 'stale', a new escalation queue entry (never a direct edit) for 'superseded-candidate'. The apply layer also aliases the Portuguese-labeled verdicts 'atual' and 'superseded-candidata' the judge model sometimes echoes (pt-verdict-alias).",
+  "verdict_enum": [
+    "current",
+    "stale",
+    "superseded-candidate"
+  ],
   "cases": [
     {
       "file": "01-contradicts-seed.md",

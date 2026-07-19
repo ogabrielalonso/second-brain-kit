@@ -8,6 +8,10 @@ Carve-outs, each deliberate:
 - installer/INSTALL.md may contain the French word used as the canonical
   accent-folding example in the dedup spec (an i18n feature illustration,
   not a language leak).
+- Lines tagged pt-verdict-alias (brain_aging.py and its fixture _doc) may
+  name the two Portuguese verdict strings the aging apply-layer accepts as
+  aliases for robustness (the judge model sometimes answers in the owner's
+  language); those literals are a feature, not a leak.
 - tests/denylist.local.txt (gitignored, author-local) is excluded: it never
   ships.
 - This file excludes itself: it must name the patterns it hunts.
@@ -33,9 +37,14 @@ PT_WORDS = re.compile(
     r"\b(você|não|nao existe|arquivo|arquivos|fila|pasta|pastas|aprovado|descartado|"
     r"escalado|julgar|julga|conteúdo|conteudo|seção|secao|lição|licao|"
     r"proibido|travessão|travessao|semanal|diário|destilar|veredito|motivo|"
-    r"pessoal|decisão|revisão)\b",
+    r"pessoal|decisão|revisão|atual|candidata|candidatos|aprender|regra)\b",
     re.IGNORECASE,
 )
+ALLOWED_PT_LINES = {
+    # the aging apply-layer's Portuguese verdict aliases (see module docstring)
+    (KIT_ROOT / "scripts" / "brain_aging.py", "pt-verdict-alias"),
+    (KIT_ROOT / "tests" / "fixtures" / "aging" / "expected.json", "pt-verdict-alias"),
+}
 
 
 def _iter_files():
@@ -67,6 +76,8 @@ def main():
                 hits.append(f"{path.relative_to(KIT_ROOT)}:{lineno}: accented (non-English) text")
                 continue
             if PT_WORDS.search(line):
+                if any(path == ap and marker in line for ap, marker in ALLOWED_PT_LINES):
+                    continue
                 hits.append(f"{path.relative_to(KIT_ROOT)}:{lineno}: Portuguese word")
 
     if hits:

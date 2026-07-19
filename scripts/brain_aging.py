@@ -252,7 +252,7 @@ def main():
         ver = v.get("verdict", v.get("verdict", "current"))
         # accept both the PT-BR-labeled and EN-labeled verdict values the
         # prompt may echo back
-        ver = {"atual": "current", "superseded-candidata": "superseded-candidate"}.get(ver, ver)
+        ver = {"atual": "current", "superseded-candidata": "superseded-candidate"}.get(ver, ver)  # pt-verdict-alias
         if not (vault / rel).exists():
             continue
         stats[ver] = stats.get(ver, 0) + 1

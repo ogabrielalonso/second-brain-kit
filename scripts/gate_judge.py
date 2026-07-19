@@ -204,7 +204,11 @@ def load_queue(queue_dir, max_n):
         return []
     out = []
     for p in sorted(queue_dir.glob("*.md")):
-        if p.name == QUEUE_INDEX_NAME:
+        # Underscore-prefixed files are scaffolding (the queue index, the
+        # skeleton's _README.md), never candidates: judging them meant the
+        # first real run DELETED the owner's _README via the discard path.
+        # Same criterion as the watchdog's queue count (test_queue_hygiene.py).
+        if p.name.startswith("_"):
             continue
         txt = p.read_text(encoding="utf-8")
         # already escalated in a previous round: waits for a HUMAN decision;

@@ -10,9 +10,9 @@
 #   {{KIT_DIR}}    absolute path to the kit checkout (default ~/.brain/kit, resolved)
 #   {{BRAIN_HOME}} absolute path to ~/.brain (resolved), used only for log files here
 #
-# Log hygiene: StandardOutput/StandardError below capture what the process prints; kept
-# separate from the daemon's own internal log ({{BRAIN_HOME}}/logs/daemon.log) so the two
-# never interleave or duplicate lines.
+# Log hygiene: StandardOutput/StandardError below capture what the process prints.
+# brain_daemon.py deliberately logs to stdout only (no internal log file of its own),
+# so this capture is the daemon's one and only log.
 
 [Unit]
 Description=brain-kit retrieval daemon

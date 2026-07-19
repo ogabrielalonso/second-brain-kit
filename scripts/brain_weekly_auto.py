@@ -59,7 +59,9 @@ def log(msg):
         f.write(line + "\n")
 
 
-def ntfy(msg, main_language):
+def ntfy(msg):
+    # System notifications are deliberately English-only (short, technical);
+    # owner-language content lives in the reports/digests, not in push alerts.
     from notify import send
     send(msg, title="brain-weekly", tags="calendar")
 
@@ -121,7 +123,7 @@ def fix_frontmatter_dates(vault, index_targets, index_exclude, dry, touched):
                 Path(p).write_text(new, encoding='utf-8')
                 touched.append(Path(p))
             fixed += 1
-            log(f"frontmatter fix: created:{created} in {rel}")
+            log(f"{'dry: would fix ' if dry else ''}frontmatter fix: created:{created} in {rel}")
     return fixed
 
 
@@ -186,7 +188,7 @@ def gate_telemetry_section():
     an empty section instead of crashing this pipeline."""
     try:
         gl = import_module('gate_log')
-        s = gl.compute_stats(weeks=12)
+        s = gl.compute_stats(gl.load_config(), 12)
     except Exception as e:
         log(f"gate telemetry unavailable (non-critical): {e}")
         return ""
@@ -290,8 +292,11 @@ def main():
     main_language = brain_config.main_language()
 
     # 1. deterministic lint + digest (generates the base report)
-    subprocess.run([sys.executable, str(Path(__file__).parent / "brain_weekly.py"),
-                    '--days', '7'], capture_output=True, text=True)
+    # brain_weekly.py WRITES the report into the vault, so a dry run must skip it:
+    # dry means zero side effects inside the vault (guarded by test_dry_run_clean.py).
+    if not dry:
+        subprocess.run([sys.executable, str(Path(__file__).parent / "brain_weekly.py"),
+                        '--days', '7'], capture_output=True, text=True)
     report = vault / taxonomy.get('weekly_dir', '04-Journal/Weekly') / f"Brain-Weekly-{today}.md"
     index_targets = taxonomy.get('index_targets', [])
     index_exclude = taxonomy.get('index_exclude', [])
@@ -329,7 +334,7 @@ def main():
             capture_output=True, text=True)
         ntfy(f"Brain weekly ready: {n_queue} candidates in the gate, auto-fixes: "
              f"{n_links} links + {n_dash}/{n_dash_total} dash files + "
-             f"{n_dates} frontmatter. Reply to dispatch.", main_language)
+             f"{n_dates} frontmatter. Reply to dispatch.")
         STATE.parent.mkdir(parents=True, exist_ok=True)
         STATE.write_text(datetime.datetime.now().isoformat(timespec='seconds'), encoding='utf-8')
     log(f"weekly-auto done (dry={dry})")

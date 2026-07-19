@@ -148,11 +148,12 @@ contract (owner's language, zero jargon, no em/en dashes ever).
 
 Part 1 (owner, non-technical): unchanged spirit from v1.7 + one new prerequisite:
 `git` available (installer handles install with one-line ok). The file carries the
-repo location as `{{KIT_REPO_URL}}` (filled at export time; offline fallback: the
-kit folder may be shipped as a zip alongside the .md).
+repo location as a literal URL (forks: search-and-replace its occurrences in
+installer/INSTALL.md; offline fallback: the kit folder may be shipped as a zip
+alongside the .md).
 
 Part 2 phases (exit gates and the 3 demonstration checkpoints kept from v1.7):
-- Phase -1 Preflight: tooling detect/install; clone `{{KIT_REPO_URL}}` to
+- Phase -1 Preflight: tooling detect/install; clone the kit repo (URL literal in INSTALL.md) to
   `~/.brain/kit` (or unpack the provided zip); run `tests/run_all.sh` BEFORE
   touching the owner's machine state (the kit proves itself first).
 - Phase 0 Foundation: interview → MODE A (map their vault: full sweep read-only,
@@ -168,7 +169,7 @@ Part 2 phases (exit gates and the 3 demonstration checkpoints kept from v1.7):
   mandatory, synthetic session test if no history. Checkpoint 2.
 - Phase 3 Gate + telemetry + watchdog: as v1.7 (eligibility rule defined once).
 - Phase 4 Judge: install DORMANT from `prompts/judge.md` + fixtures; turn-on note.
-- Phase 5 Self-maintenance: aging + quarterly connection audit schedules.
+- Phase 5 Self-maintenance: aging schedule + quarterly connection audit (manual ritual, no service template).
 - Phase 6 Always-on: global CLAUDE.md section, briefing hook (<4k tokens budget),
   retrieval hook (threshold, instance_id check), ask/save commands. Checkpoint 3
   (fresh session knows the owner) + first dispatch. Final report <15 lines.

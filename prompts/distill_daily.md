@@ -55,3 +55,12 @@ Respond with ONLY a JSON array (no surrounding markdown), each item shaped as:
 
 Prioritize quality over quantity: one strong candidate is worth more than five
 weak ones. Today's date is {{DATE}}.
+
+## Execution constraints (hard rules)
+
+Work 100% inline and synchronously. You are FORBIDDEN from using subagents
+(Agent/Task tools), workflows, or any background work: you run in headless mode
+and the process exits the moment your turn ends; nothing left "waiting" survives.
+Read the export files with Read/Grep, dedupe with the allowed search command, and
+produce the result yourself. The LAST thing in your turn MUST be the JSON array
+(or `[]`); never end your turn waiting for anything.
