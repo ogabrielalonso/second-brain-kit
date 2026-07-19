@@ -43,6 +43,23 @@ LINKRE = re.compile(r'\[\[([^\]|#]+)')
 ATTACH = re.compile(r'\.(png|jpe?g|gif|svg|pdf|excalidraw|webp|mp4|mov|xlsx?|csv)$', re.I)
 PLACEHOLDER = re.compile(r'YYYY|XXXX|<|slug|example|name-of|\.\.\.', re.I)
 ORPHAN_SKIP = ('moc', 'index', 'home', 'readme', '_')
+# Obsidian does NOT resolve [[...]] inside code; without this strip, the weekly
+# reports (which list broken links inside `code spans`) become a self-referential
+# source of fake broken links on every following lint run.
+CODE_RE = re.compile(r'```.*?```|`[^`\n]*`', re.S)
+
+
+def link_targets_index(vault):
+    """Valid wikilink targets = EVERY file in the vault (md, canvas, ...), even
+    outside index_targets: link existence is about the filesystem Obsidian
+    resolves against, not about what the semantic index covers."""
+    names = set()
+    for root, dirs, files in os.walk(vault):
+        dirs[:] = [d for d in dirs if d != '.git']
+        for f in files:
+            names.add(nfc(os.path.splitext(f)[0]))
+            names.add(nfc(f))
+    return names
 
 
 def excluded(rel, index_exclude):
@@ -76,14 +93,14 @@ def clean_target(tgt):
 
 def lint(vault, index_targets, index_exclude, stale_days):
     alln = all_notes(vault, index_targets, index_exclude)
-    byname = {nfc(os.path.splitext(os.path.basename(p))[0]) for p in alln}
+    byname = link_targets_index(vault)
     broken = []
     status = Counter()
     dashes = 0
     targets = set()
     for p in alln:
         t = open(p, encoding='utf-8', errors='replace').read()
-        for tg in LINKRE.findall(t):
+        for tg in LINKRE.findall(CODE_RE.sub('', t)):
             targets.add(clean_target(tg))
     now = datetime.datetime.now()
     orphans = []
@@ -95,7 +112,7 @@ def lint(vault, index_targets, index_exclude, stale_days):
         st = field(f, 'status')
         status[st or 'no-status'] += 1
         dashes += t.count(chr(0x2014)) + t.count(chr(0x2013))
-        for tg in LINKRE.findall(t):
+        for tg in LINKRE.findall(CODE_RE.sub('', t)):
             tb = clean_target(tg)
             if not tb or tb == 'wikilinks' or tb.isdigit():
                 continue  # empty / syntax / numeric citation
