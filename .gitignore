@@ -36,3 +36,6 @@ tmp/
 
 # private leak-pattern list (author-local, never shipped)
 tests/denylist.local.txt
+
+# local backups (v2 prototype bundle etc.), author-local, never committed
+backups/
