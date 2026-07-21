@@ -20,7 +20,8 @@
     "digests_dir": "04-Journal",
     "heuristics": {
       "lessons": "",
-      "patterns": ""
+      "patterns": "",
+      "routing": ""
     },
     "home_dir": "00-HOME",
     "index_targets": [
@@ -51,5 +52,6 @@
       "min_weeks": 6
     }
   },
-  "judge_enabled": false
+  "judge_enabled": false,
+  "judge_model_heuristics": ""
 }

@@ -48,10 +48,17 @@ Respond with ONLY a JSON array (no surrounding markdown), each item shaped as:
     "evidence": "short quote or description of the moment in the session that supports this",
     "project": "short name of the project the session belongs to",
     "proposed_destination": "the canonical destination: a new dated file under the decisions folder, a new row in the lessons file, or a new section in the patterns file",
+    "nature": "where the rule should ACT, one of: decision-tree (reproducible step-by-step, becomes a skill) | score (measurable criterion, becomes a quality gate) | judgment (pattern that needs context, feeds agent prompts or briefs) | axiom (never/always rule, lives in governance: CLAUDE.md, rules, hooks) | one-off-decision (a dated project choice, not a reusable rule, stays a record)",
+    "domain": "the type of decision the rule guides, one of: verification-qa | deploy-delivery | architecture-code | ai-orchestration | data-facts | communication-copy | security-privacy | git-versioning | process-workflow | business-strategy",
     "reason_not_to_enter": "one honest line: why the owner might reject this (duplicates X? too narrow a scope? not yet confirmed?)"
   }
 ]
 ```
+
+About `nature`/`domain` (heuristics clustering): always propose both; the
+judge validates and may correct them. When in doubt between decision-tree
+and judgment, use judgment; axiom only when the rule holds ALWAYS with no
+contextual exception.
 
 Prioritize quality over quantity: one strong candidate is worth more than five
 weak ones. Today's date is {{DATE}}.

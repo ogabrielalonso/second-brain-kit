@@ -306,6 +306,10 @@ def write_queue(cands, today, queue_dir):
     for c in cands:
         ctype = c.get('type', 'lesson')
         title = c.get('title', 'untitled')
+        nature = c.get('nature', '')
+        domain = c.get('domain', '')
+        class_line = (f"\n**Proposed class (distiller):** {nature} | {domain}"
+                      if nature or domain else "")
         fname = f"{today}-{slugify(title)}.md"
         fp = queue_dir / fname
         body = f"""---
@@ -315,11 +319,13 @@ description: "Candidate from brain-daily on {today}, awaiting gate"
 status: draft
 created: {today}
 proposed_destination: "{c.get('proposed_destination', '')}"
+nature: "{nature}"
+domain: "{domain}"
 ---
 
 # {title}
 
-**Type:** {ctype} | **Proposed destination:** `{c.get('proposed_destination', '?')}`
+**Type:** {ctype} | **Proposed destination:** `{c.get('proposed_destination', '?')}`{class_line}
 **Evidence:** {c.get('evidence', '?')} (project: {c.get('project', '?')})
 
 {c.get('body', '')}

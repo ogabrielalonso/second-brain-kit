@@ -1,5 +1,72 @@
 # Changelog
 
+## v1.9.0 (2026-07-21)
+
+Feature release: heuristics clustering, a two-axis classification for every
+heuristic, lesson, pattern and decision the gate touches.
+
+- **Two-axis classification** (`scripts/heuristics_taxonomy.py`, new, the
+  single source of truth for the vocabulary): `nature`, where a rule should
+  act (`decision-tree`, `score`, `judgment`, `axiom`, or the honest fifth
+  value `one-off-decision` for a dated, non-reusable project choice, each
+  mapped deterministically to a route: skill, quality gate, agent-brain,
+  governance, or record) and `domain`, the type of decision it guides
+  (verification-qa, deploy-delivery, architecture-code, ai-orchestration,
+  data-facts, communication-copy, security-privacy, git-versioning,
+  process-workflow, business-strategy).
+- **Judge classification criterion** (`prompts/judge.md`, criterion 10):
+  classification is mandatory for every approved or edited candidate;
+  `scripts/gate_judge.py` validates the model's `nature`/`domain` against the
+  closed vocabulary in code (an invalid value becomes empty, it is never
+  invented) before writing the label: a table cell in lessons rows, a
+  "- **Class:**" line in pattern sections, and `nature`/`domain` frontmatter
+  fields in decision notes.
+- **Mechanical anti-fabrication check**: `gate_judge.cited_paths_check()`
+  verifies on disk, before judgment, every file path a candidate cites, and
+  injects the result into the candidate block the judge reads.
+- **Promotion backlog**: when a rule's nature is `decision-tree`, `score` or
+  `axiom` and it does not yet act on a real surface, the judge may propose a
+  one-line `promotion`; `gate_judge.apply_promotion()` records it as a
+  checkbox in the owner's routing note (`taxonomy.heuristics.routing`, a new
+  optional config key) for the owner to decide, and only logs (never
+  fabricates a file) when no routing note is configured.
+- **Daily distillation** (`prompts/distill_daily.md`, `scripts/brain_daily.py`):
+  the cheap model now proposes `nature`/`domain` on every candidate; drafts
+  in the gate queue carry both fields in frontmatter and body.
+- **Re-runnable backfill and route audit** (`scripts/classify_heuristics.py`,
+  new): classifies whatever slipped through the daily pipeline without a
+  class, verifies a blind sample with the judge model (on disagreement the
+  judge wins), and audits which decision-tree/score/axiom rules already act
+  on a real surface versus which are worth promoting. Supports `--dry-run`,
+  `--skip-audit`, `--skip-verify`, `--reverify-all` (re-classifies the whole
+  corpus with the judge model) and `--audit-only`. Config-driven throughout:
+  no hardcoded vault path, reads `taxonomy.heuristics.lessons`/`.patterns`
+  and skips gracefully when either is unset.
+- **Optional per-type judge model**: a new `judge_model_heuristics` config
+  key (default unset) lets `gate_judge.py` judge lesson/heuristic candidates
+  with a different model than the rest of the queue, falling back to the
+  base model on failure; leave it unset to judge everything with the base
+  model as before.
+- Test suite grew by two files: `test_heuristics_taxonomy.py` (vocabulary
+  validation, class-label format and stability, route-map coverage) and
+  `test_heuristics_classification.py` (the applier write path, the
+  promotion backlog, the mechanical paths check, and the rendered judge
+  prompt). Both were verified to FAIL against the pre-feature tree (via
+  `git stash`) before landing.
+
+Also includes two fixes already committed since v1.8.1 that had not yet
+shipped in a release:
+
+- **Weekly lint self-referential false positives**: broken-link counting no
+  longer counts wikilinks written inside code spans (the weekly report lists
+  broken links inside backticks, which made every following run count them
+  again), and link targets now resolve against every file in the vault
+  (canvas, root files, archived notes), not only indexed notes. Found while
+  driving the reference vault to 0 broken links (120 of 162 reported were
+  this false positive).
+- Ignore the local `backups/` directory (author-local prototype bundles,
+  never committed).
+
 ## v1.8.1 (2026-07-19)
 
 Bug-fix release after the first team installs. Three issues were reported from

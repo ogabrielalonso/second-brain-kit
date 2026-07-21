@@ -23,7 +23,7 @@ DEFAULT_TAXONOMY = {
     "weekly_dir": "04-Journal/Weekly",
     "queue_dir": "04-Journal/gate-queue",
     "digests_dir": "04-Journal",
-    "heuristics": {"lessons": "", "patterns": ""},
+    "heuristics": {"lessons": "", "patterns": "", "routing": ""},
     "home_dir": "00-HOME",
     "index_targets": ["00-HOME", "01-MOCs", "02-Projects", "03-Knowledge", "04-Journal"],
     "index_exclude": ["_system/", "Inbox/", "gate-queue/", "/templates/", "/history/"],

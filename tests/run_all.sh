@@ -31,6 +31,8 @@ TESTS=(
   test_queue_hygiene.py
   test_dry_run_clean.py
   test_distill_contract.py
+  test_heuristics_taxonomy.py
+  test_heuristics_classification.py
 )
 
 overall_rc=0

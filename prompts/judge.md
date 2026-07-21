@@ -19,7 +19,9 @@ CRITERIA (in order):
 
 1. DO NOT FABRICATE: does the candidate assert something verifiable from the
    cited evidence? Numbers, roles, or names without evidence: discard or
-   escalate.
+   escalate. The "[mechanical check of cited paths]" line under each
+   candidate already verified on disk the files it cites: a path marked NOT
+   FOUND is a strong signal of fabrication (discard or escalate).
 2. DEDUP: does this already exist in the brain (even worded differently)? ->
    discard with the reason "duplicate of X".
 3. CONTRADICTION: does it conflict with an existing `active` note? -> escalate
@@ -50,6 +52,23 @@ CRITERIA (in order):
    (the content becomes a section there, not a new note). Only keep it
    standalone when the topic genuinely has no home yet in the vault. Reuse
    beats adapt beats create, for notes too.
+10. CLASSIFICATION (mandatory for approve or edit): a heuristic without a
+    class is dead weight, unroutable. Classify the item along two closed
+    axes and return them in `nature` and `domain`; never invent a value
+    outside the vocabulary below.
+    nature (where the rule should ACT), one of: {{NATURE_VOCAB}}
+    domain (the type of decision it guides), one of: {{DOMAIN_VOCAB}}
+    When in doubt between decision-tree and judgment, use judgment
+    (decision-tree requires steps reproducible without extra context); axiom
+    only when the rule holds ALWAYS, with no contextual exception; a dated
+    choice from one specific project is a one-off-decision, not a
+    heuristic. If the candidate already carries a nature or domain from the
+    distiller, validate it and correct it if you disagree. When the nature
+    is decision-tree, score or axiom AND the rule does not yet act on any
+    real surface (a skill, a quality gate, a hook, a CLAUDE.md rule), fill
+    `promotion` with a concrete one-line proposal (for example: "governance:
+    add this rule to the global CLAUDE.md"). A promotion is a suggestion
+    recorded for the owner to decide, never applied automatically.
 
 ESCALATION PRECEDENCE: when more than one reason could apply to the same
 candidate, resolve it in this fixed order: (1) duplicate content, discard
@@ -76,7 +95,10 @@ RESPOND WITH ONLY a JSON array (no markdown, no comments):
     "final_content": "for approve or edit: the final text ready for the destination; for a lesson, the lesson sentence; for a pattern or decision, the body in markdown",
     "related": ["<exact-basename-of-existing-note>"],
     "final_destination": "only if redirected (criterion 9): relative path of the existing .md file that absorbs the content",
-    "discovered_via": "lessons only: 2 to 4 words, for example error-to-fix"
+    "discovered_via": "lessons only: 2 to 4 words, for example error-to-fix",
+    "nature": "criterion 10: one value from the nature vocabulary",
+    "domain": "criterion 10: one value from the domain vocabulary",
+    "promotion": "only if applicable (criterion 10): a concrete one-line proposal"
   }
 ]
 ```

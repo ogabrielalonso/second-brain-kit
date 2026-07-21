@@ -23,6 +23,15 @@ Escalated items STAY in the queue for the owner; everything else flows and
 becomes canon with provenance approved_by: brain-judge. Reverting is cheap
 (git revert).
 
+Heuristics clustering: every approved or edited candidate is also classified
+along the two closed axes in heuristics_taxonomy.py (nature, domain; see
+prompts/judge.md criterion 10) and the resulting class label is written by the
+matching apply_* function. When a rule should act as a skill, quality gate or
+governance rule but does not act on any real surface yet, the judge may fill
+`promotion`; apply_promotion() records it as a suggestion for the owner, never
+applied automatically. scripts/classify_heuristics.py is the re-runnable
+backfill for whatever slips through without a class.
+
 Telemetry: every decision goes to gate_log with decider=brain-judge; the judge's
 quality metric becomes the rate of after-the-fact reversion by the owner.
 
@@ -48,6 +57,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from brain_config import load_config
+from heuristics_taxonomy import NATURES, DOMAINS, validate as validate_class, class_label
 
 KIT_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = Path(__file__).resolve().parent
@@ -65,7 +75,7 @@ DEFAULT_TAXONOMY = {
     "decisions_dir": "04-Journal/Decisions",
     "digests_dir": "04-Journal",
     "queue_dir": "04-Journal/gate-queue",
-    "heuristics": {"lessons": "", "patterns": ""},
+    "heuristics": {"lessons": "", "patterns": "", "routing": ""},
     "index_exclude": ["_system/", "Inbox/", "gate-queue/", "/templates/", "/history/"],
     "moc_map": {},
 }
@@ -158,10 +168,26 @@ def index_decision_row(decisions_dir, fp, title, today, touched):
     touched.append(index_fp)
 
 
+def cited_paths_check(body, vault):
+    """Mechanical anti-fabrication check: paths a candidate cites are verified
+    on disk BEFORE judgment; the result is appended to the candidate block.
+    The judge still decides; this code only reports the fact (relative paths
+    resolve against the owner's vault; absolute or home-relative paths
+    resolve as given)."""
+    pats = set(re.findall(r"[\w~/][\w./~-]{3,90}\.(?:md|py|ts|tsx|js|json|sh|ya?ml)", body))
+    out = []
+    for p in sorted(pats)[:8]:
+        candidates = [Path(p).expanduser()] if p.startswith(("~", "/")) else [vault / p]
+        exists = any(c.exists() for c in candidates)
+        out.append(f"{p}: {'exists' if exists else 'NOT FOUND on disk'}")
+    return ("\n[mechanical check of cited paths] " + "; ".join(out)) if out else ""
+
+
 def render_judge_prompt(cands, cfg, vault):
     blob = ""
     for c in cands:
-        blob += f"\n--- CANDIDATE {c['file']} (type: {c['type']}, proposed destination: {c['destination']}) ---\n{c['body'][:2000]}\n"
+        blob += (f"\n--- CANDIDATE {c['file']} (type: {c['type']}, proposed destination: {c['destination']}) ---\n"
+                 f"{c['body'][:2000]}{cited_paths_check(c['body'], vault)}\n")
     prompt = PROMPT_FILE.read_text(encoding="utf-8")
     repl = {
         "{{OWNER_NAME}}": cfg.get("owner_name") or "the owner",
@@ -170,6 +196,8 @@ def render_judge_prompt(cands, cfg, vault):
         "{{VAULT}}": str(vault),
         "{{QUERY_SH}}": str(QUERY_SH),
         "{{CANDIDATES}}": blob,
+        "{{NATURE_VOCAB}}": " | ".join(f"{k} ({v})" for k, v in NATURES.items()),
+        "{{DOMAIN_VOCAB}}": ", ".join(DOMAINS),
     }
     for k, v in repl.items():
         prompt = prompt.replace(k, v)
@@ -263,6 +291,48 @@ def run_judge(cands, model, cfg, vault, workspace):
         return None, f"invalid JSON from judge: {e}"
 
 
+HEURISTIC_TYPES = ("lesson", "heuristic")
+
+
+def run_judge_grouped(cands, base_model, heuristics_model, cfg, vault, workspace, log_path):
+    """Mirrors run_judge(), but when config.judge_model_heuristics is set,
+    lesson/heuristic candidates are judged with that model instead of the
+    base one: classifying a heuristic is closer to a judgment call than the
+    gate's other decisions, so an owner may want a stronger (or simply
+    different) model on that subset. Everything else stays on the base
+    model. Falls back to the base model on failure, with a log line, so a
+    run never silently drops a whole group; if heuristics_model is unset,
+    every candidate is judged exactly as run_judge() would do it directly."""
+    heur = [c for c in cands if (c["type"] or "").lower() in HEURISTIC_TYPES]
+    other = [c for c in cands if (c["type"] or "").lower() not in HEURISTIC_TYPES]
+    groups = [(heur, [heuristics_model, base_model] if heuristics_model else [base_model]),
+              (other, [base_model])]
+    verdicts, any_ok, last_err = [], False, None
+    for group, chain in groups:
+        if not group:
+            continue
+        v, err, used = None, None, None
+        seen = []
+        for m in chain:
+            if m in seen:
+                continue
+            seen.append(m)
+            used = m
+            v, err = run_judge(group, m, cfg, vault, workspace)
+            if v is not None:
+                break
+        if v is None:
+            last_err = err
+            log(f"judge failed for {len(group)} candidates (model chain {chain}): {err}", log_path)
+        else:
+            if len(seen) > 1:
+                log(f"fallback: {len(group)} candidates judged with {used} "
+                    f"({seen[0]} unavailable or failed)", log_path)
+            verdicts.extend(v)
+            any_ok = True
+    return (verdicts if any_ok else None), (None if any_ok else last_err)
+
+
 # ---------- deterministic appliers (the LLM decides, the code writes) ----------
 #
 # Split in two phases on purpose: resolve_destination() is pure (no disk writes)
@@ -281,7 +351,8 @@ def apply_lesson(vault, lessons_rel, verdict, today, touched):
     n = (max(nums) + 1) if nums else 1
     lesson = verdict["final_content"].replace("|", "/").replace("\n", " ").strip()
     how = verdict.get("discovered_via", "auto-gate").replace("|", "/")
-    row = f"| {n} | {lesson} | {how} | brain-daily+brain-judge {today} |\n"
+    cls = class_label(verdict.get("nature"), verdict.get("domain"))
+    row = f"| {n} | {lesson} | {how} | brain-daily+brain-judge {today} | {cls} |\n"
     lines = txt.rstrip("\n").split("\n")
     table_rows = [i for i, l in enumerate(lines) if l.startswith("|")]
     if not table_rows:
@@ -301,8 +372,10 @@ def apply_pattern(vault, patterns_rel, verdict, today, touched):
         return None
     txt = fp.read_text(encoding="utf-8")
     title = verdict.get("title") or verdict["file"].split("-", 3)[-1].replace(".md", "").replace("-", " ")
+    cls = class_label(verdict.get("nature"), verdict.get("domain"))
+    cls_line = f"- **Class:** {cls}\n" if cls else ""
     block = (f"\n## {title.strip().capitalize()}\n{verdict['final_content'].strip()}\n"
-             f"- **Provenance:** brain-daily+brain-judge {today}\n")
+             f"- **Provenance:** brain-daily+brain-judge {today}\n{cls_line}")
     fp.write_text(txt.rstrip("\n") + "\n" + block, encoding="utf-8")
     touched.append(fp)
     return f"new section in {fp.name}"
@@ -316,12 +389,14 @@ def apply_decision(vault, decisions_dir_rel, verdict, today, title, touched):
     rel = resolve_related(vault, verdict.get("related", []))
     rel_fm = ("\nrelated: [" + ", ".join(f'"[[{r}]]"' for r in rel) + "]") if rel else ""
     rel_body = ("\n\n## Related\n\n" + "\n".join(f"- [[{r}]]" for r in rel)) if rel else ""
+    nat, dom = validate_class(verdict.get("nature"), verdict.get("domain"))
+    class_fm = f"\nnature: {nat}\ndomain: {dom}" if nat and dom else ""
     fp.write_text(f"""---
 type: note
 title: "{title}"
 description: "Decision graduated by the autonomous gate (brain-judge) on {today}"
 status: active
-approved_by: brain-judge
+approved_by: brain-judge{class_fm}
 created: {today}{rel_fm}
 ---
 
@@ -424,6 +499,45 @@ def apply_resolved(resolution, cand, verdict, today, vault, taxonomy, touched):
     return None
 
 
+def apply_promotion(cand, verdict, taxonomy, vault, today, touched, log_path):
+    """A promotion suggestion from the judge (criterion 10 in prompts/judge.md:
+    a heuristic that should ACT as a skill, quality gate or governance rule and
+    does not act on any real surface yet) becomes a checklist item in the
+    owner's routing note, if one is configured
+    (config.taxonomy.heuristics.routing). Deciding or implementing a promotion
+    is ALWAYS the owner's call; the gate never edits CLAUDE.md, skills or
+    hooks itself. Unrelated to gate_log.py's "eligible_for_promotion" (the
+    judge auto-approve eligibility rule): same English word, two different
+    concepts."""
+    promotion = str(verdict.get("promotion") or "").strip()
+    if not promotion:
+        return
+    routing_rel = (taxonomy.get("heuristics") or {}).get("routing") or ""
+    if not routing_rel:
+        log(f"promotion suggested but no routing note is configured "
+            f"(taxonomy.heuristics.routing): {promotion[:120]}", log_path)
+        return
+    fp = vault / routing_rel
+    if not fp.exists():
+        log(f"promotion suggested but the configured routing note does not "
+            f"exist ({routing_rel}): {promotion[:120]}", log_path)
+        return
+    title = (cand.get("title") or cand.get("file", "")).strip()
+    line = f"- [ ] {today} | {title[:80]}: {promotion[:180]}".replace("\n", " ")
+    txt = fp.read_text(encoding="utf-8")
+    if promotion[:60] in txt:
+        return  # already suggested in a previous round
+    header = "## Heuristic promotion backlog"
+    lines = txt.split("\n")
+    try:
+        hi = next(i for i, l in enumerate(lines) if l.startswith(header))
+        lines.insert(hi + 1, line)
+    except StopIteration:
+        lines += ["", header, "", line]
+    fp.write_text("\n".join(lines).rstrip("\n") + "\n", encoding="utf-8")
+    touched.append(fp)
+
+
 def telemetry(file, ctype, decision, destination, reason):
     subprocess.run([sys.executable, str(GATE_LOG), "add", "--file", file, "--type", ctype or "unknown",
                     "--decision", decision, "--destination", destination or "",
@@ -521,9 +635,14 @@ def main():
     # the single documented source for the value (gate_log's own policy file
     # tracks auto-approve promotions, a different concern).
     cap = (cfg.get("thresholds") or {}).get("max_apply_per_run", DEFAULT_MAX_APPLY_PER_RUN)
-    _log(f"judging {len(cands)} candidates with {args.model} (apply cap: {cap}/run)")
+    heuristics_model = (cfg.get("judge_model_heuristics") or "").strip()
+    if heuristics_model:
+        _log(f"judging {len(cands)} candidates ({heuristics_model} for lessons/heuristics, "
+             f"{args.model} for the rest; apply cap: {cap}/run)")
+    else:
+        _log(f"judging {len(cands)} candidates with {args.model} (apply cap: {cap}/run)")
 
-    verdicts, err = run_judge(cands, args.model, cfg, vault, workspace)
+    verdicts, err = run_judge_grouped(cands, args.model, heuristics_model, cfg, vault, workspace, log_path)
     if err:
         _log(err)
     if verdicts is None:
@@ -570,8 +689,11 @@ def main():
                     touched.append(c["path"])
                     key = "approved" if decision == "approve" else "edited"
                     stats[key] += 1
-                    telemetry(c["file"], c["type"], key, c["destination"], v.get("reason", ""))
-                    digest.append(f"{key.upper()}: {c['title']} -> {where}")
+                    cls = class_label(v.get("nature"), v.get("domain"))
+                    reason = (f"[{cls}] " if cls else "") + v.get("reason", "")
+                    telemetry(c["file"], c["type"], key, c["destination"], reason)
+                    apply_promotion(c, v, taxonomy, vault, today, touched, log_path)
+                    digest.append(f"{key.upper()}: {c['title']} -> {where}" + (f" [{cls}]" if cls else ""))
 
         if decision == "discard":
             c["path"].unlink()
