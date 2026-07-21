@@ -47,8 +47,24 @@ ALLOWED_PT_LINES = {
 }
 
 
+def _shipped_paths():
+    """English-only applies to what SHIPS: git-tracked files. A gitignored,
+    author-local file never ships and must not trip the guard (root-cause
+    fix, 2026-07-21). Fallback without git: whole-tree walk (conservative)."""
+    import subprocess
+    try:
+        out = subprocess.run(["git", "-C", str(KIT_ROOT), "ls-files", "-z"],
+                             capture_output=True, text=True, timeout=30)
+        if out.returncode == 0 and out.stdout.strip():
+            return [KIT_ROOT / f for f in out.stdout.split("\0") if f]
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return None
+
+
 def _iter_files():
-    for p in KIT_ROOT.rglob("*"):
+    tracked = _shipped_paths()
+    for p in (tracked if tracked is not None else KIT_ROOT.rglob("*")):
         if not p.is_file():
             continue
         r = p.resolve()
